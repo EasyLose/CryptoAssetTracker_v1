@@ -1,23 +1,25 @@
-let cryptoAssetPortfolio = [
+// Define the crypto asset portfolio
+const cryptoAssetPortfolio = [
     { id: "btc", name: "Bitcoin", priceUSD: 20000 },
     { id: "eth", name: "Ethereum", priceUSD: 1500 },
     { id: "ltc", name: "Litecoin", priceUSD: 100 },
 ];
 
-function getCryptoAssetById(assetId) {
-    return cryptoAssetPortfolio.find(asset => asset.id === assetId);
-}
+// Function to get a crypto asset by its ID
+const getCryptoAssetById = assetId => cryptoAssetPortfolio.find(asset => asset.id === assetId);
 
-function displayCryptoAssetPrice(assetId) {
+// Function to display the price of a crypto asset
+const displayCryptoAssetPrice = assetId => {
     const cryptoAsset = getCryptoAssetById(assetId);
     if (cryptoAsset) {
         console.log(`The price of ${cryptoAsset.name} is $${cryptoAsset.priceUSD}.`);
     } else {
         console.log("Cryptocurrency not found.");
     }
-}
+};
 
-function updateCryptoAssetPrice(assetId, updatedPrice) {
+// Function to update the price of a crypto asset
+const updateCryptoAssetPrice = (assetId, updatedPrice) => {
     const cryptoAsset = getCryptoAssetById(assetId);
     if (cryptoAsset) {
         cryptoAsset.priceUSD = updatedPrice;
@@ -25,9 +27,10 @@ function updateCryptoAssetPrice(assetId, updatedPrice) {
     } else {
         console.log("Failed to update price. Cryptocurrency not found.");
     }
-}
+};
 
-function addCryptoAssetToPortfolio(assetId, assetName, assetPrice) {
+// Function to add a new crypto asset to the portfolio
+const addCryptoAssetToPortfolio = (assetId, assetName, assetPrice) => {
     const assetExists = cryptoAssetPortfolio.some(asset => asset.id === assetId);
     if (!assetExists) {
         cryptoAssetPortfolio.push({ id: assetId, name: assetName, priceUSD: assetPrice });
@@ -35,7 +38,7 @@ function addCryptoAssetToPortfolio(assetId, assetName, assetPrice) {
     } else {
         console.log("This cryptocurrency is already being tracked.");
     }
-}
+};
 
 // Example usage
 displayCryptoAssetPrice("btc");
