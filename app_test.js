@@ -2,7 +2,7 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
-const CONTRACT_ABI = []; // Ensure this is filled with your contract's actual ABI
+const CONTRACT_ABI = [];
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
 const walletWithProvider = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -63,9 +63,6 @@ function validateOwnerAddress(ownerAddress) {
 }
 
 module.exports = {
-    // Existing functions included here for completeness...
-
-    // New functionality: Fetch specific asset details
     getAssetDetails: async (assetId) => {
         validateId(assetId);
         try {
@@ -78,7 +75,6 @@ module.exports = {
         }
     },
     
-    // New functionality: Fetch summary of all assets
     getAllAssetsSummary: async () => {
         try {
             const allAssets = await contractInstance.getAllAssets();
