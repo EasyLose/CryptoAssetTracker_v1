@@ -3,9 +3,7 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
-const CONTRACT_ABI = [
-    // Your ABI remains the same
-];
+const CONTRACT_ABI = [];
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -13,10 +11,10 @@ const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
 
 const cache = {};
 
-const cacheKeyGenerator = (prefix, id) => `${prefix}-${id}`;
+const cacheKeyGenerator = (prefix, ...args) => `${prefix}-${args.join('-')}`;
 
-async function fetchWithCache(prefix, id, contractFunc, ...args) {
-    const cacheKey = cacheKeyGenerator(prefix, id);
+async function fetchWithCache(prefix, contractFunc, ...args) {
+    const cacheKey = cacheKeyGenerator(prefix, ...args);
     if (cache[cacheKey]) {
         console.log(`Cached ${prefix}: `, cache[cacheKey]);
         return cache[cacheKey];
@@ -62,6 +60,4 @@ module.exports = {
             console.error(`Failed to initiate asset transfer: ${error.message}`);
         }
     },
-    // Other functions (approveAssetTransfer, retrieveAssetDetails, retrieveAssetHistory, listAssetsOwned) 
-    // can be similarly refactored to use fetchWithCache, validateId, and validateOwnerAddress for streamlined operations.
 };
