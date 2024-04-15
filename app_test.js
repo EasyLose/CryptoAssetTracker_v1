@@ -53,7 +53,7 @@ module.exports = {
             console.log(`Asset created: ${name}`);
         } catch (error) {
             console.error(`Failed to create asset: ${error.message}`);
-            throw error;
+            throw new Error(`Asset creation failed due to error: ${error.message}`);
         }
     },
     initiateAssetTransfer: async (assetId, newOwner) => {
@@ -65,7 +65,7 @@ module.exports = {
             console.log(`Transfer initiated for asset ID ${assetId} to ${newOwner}`);
         } catch (error) {
             console.error(`Failed to initiate asset transfer: ${error}`);
-            throw new Error(`Initiating transfer of asset ID ${assetId} failed.`);
+            throw new Error(`Initiating transfer of asset ID ${assetId} failed due to error: ${error.message}`);
         }
     },
 };
