@@ -1,68 +1,68 @@
-const DigitalAssetTracker = artifacts.require("DigitalAssetTracker");
+const AssetLedger = artifacts.require("AssetLedger");
 
-contract("DigitalAssetTracker", accounts => {
-    const [deployer, user1, user2] = accounts;
+contract("AssetLedger", accounts => {
+    const [admin, participantA, participantB] = accounts;
 
     before(async () => {
-        this.assetTracker = await DigitalAssetTracker.deployed();
+        this.ledger = await AssetLedger.deployed();
     });
 
-    it("Should allow authorized accounts to register an asset", async () => {
-        await this.assetTracker.setAuthorization(user1, true, { from: deployer });
-        const tx = await this.assetTracker.registerAsset("Asset1", "Description1", { from: user1 });
-        assert.equal(tx.logs[0].event, "AssetRegistered", "Asset should be registered");
+    it("Allows authorized users to register a new asset", async () => {
+        await this.ledger.authorizeUser(participantA, true, { from: admin });
+        const transaction = await this.ledger.registerNewAsset("Asset1", "Description1", { from: participantA });
+        assert.equal(transaction.logs[0].event, "AssetRegistered", "The asset should be registered successfully");
     });
 
-    it("Should not allow unauthorized accounts to register an asset", async () => {
+    it("Prevents unauthorized users from registering a new asset", async () => {
         try {
-            await this.assetTracker.registerAsset("Asset2", "Description2", { from: user2 });
-            assert.fail("Unauthorized account was able to register an asset");
+            await this.ledger.registerNewAsset("Asset2", "Description2", { from: participantB });
+            assert.fail("An unauthorized user was able to register a new asset");
         } catch (error) {
-            assert(error.message.indexOf('revert') >= 0, "Error message must contain 'revert'");
+            assert.include(error.message, 'revert', "The error message should indicate a 'revert' due to unauthorized access");
         }
     });
 
-    it("Should allow asset owner to initiate transfer", async () => {
-        await this.assetTracker.registerAsset("Asset3", "Description3", { from: user1 });
-        const tx = await this.assetTracker.transferAsset(1, user2, { from: user1 });
-        assert.equal(tx.logs[0].event, "TransferInitiated", "Asset transfer should be initiated");
+    it("Enables the asset owner to initiate an asset transfer", async () => {
+        await this.ledger.registerNewAsset("Asset3", "Description3", { from: participantA });
+        const transaction = await this.ledger.initiateTransfer(1, participantB, { from: participantA });
+        assert.equal(transaction.logs[0].event, "TransferInitiated", "The transfer initiation should be recorded");
     });
 
-    it("Should not allow non-owner to transfer asset", async () => {
+    it("Blocks non-owners from initiating an asset transfer", async () => {
         try {
-            await this.assetTracker.transferAsset(1, user2, { from: user2 });
-            assert.fail("Non-owner was able to initiate asset transfer");
+            await this.ledger.initiateTransfer(1, participantB, { from: participantB });
+            assert.fail("A non-owner was able to initiate an asset transfer");
         } catch (error) {
-            assert(error.message.indexOf('revert') >= 0, "Error message must contain 'revert'");
+            assert.include(error.message, 'revert', "The error message should indicate a 'revert' due to non-ownership");
         }
     });
 
-    it("Allows asset transfer completion by the new owner", async () => {
-        await this.assetTracker.acceptTransfer(1, { from: user2 });
-        const asset = await this.assetTracker.getAsset(1);
-        assert.equal(asset.owner, user2, "Asset ownership was not transferred correctly");
+    it("Allows the recipient to complete the asset transfer", async () => {
+        await this.ledger.completeTransfer(1, { from: participantB });
+        const assetDetails = await this.ledger.retrieveAssetDetails(1);
+        assert.equal(assetDetails.owner, participantB, "The asset ownership was not transferred correctly");
     });
 
-    it("Should not allow unauthorized accounts to remove an asset", async () => {
+    it("Restricts asset removal to unauthorized users", async () => {
         try {
-            await this.assetTracker.removeAsset(1, { from: deployer });
-            assert.fail("Non-owner was able to remove asset");
+            await this.ledger.removeAsset(1, { from: admin });
+            assert.fail("An unauthorized user was able to remove the asset");
         } catch (error) {
-            assert(error.message.indexOf('revert') >= 0, "Error message must contain 'revert'");
+            assert.include(error.message, 'revert', "The error message should indicate a 'revert' due to unauthorized access");
         }
     });
 
-    it("Allows asset owner to remove the asset", async () => {
-        const tx = await this.assetTracker.removeAsset(1, { from: user2 });
-        assert.equal(tx.logs[0].event, "AssetRemoved", "Asset removal should be logged");
+    it("Permits the asset owner to remove the asset", async () => {
+        const transaction = await this.ledger.removeAsset(1, { from: participantB });
+        assert.equal(transaction.logs[0].event, "AssetRemoved", "The asset removal should be recorded in the event log");
     });
 
-    it("Restricts unauthorized access for setting authorization", async () => {
+    it("Prohibits unauthorized users from altering authorization settings", async () => {
         try {
-            await this.assetTracker.setAuthorization(user2, true, { from: user1 });
-            assert.fail("Unauthorized account was able to set authorization");
+            await this.ledger.authorizeUser(participantB, true, { from: participantA });
+            assert.fail("An unauthorized user was able to modify authorization settings");
         } catch (error) {
-            assert(error.message.indexOf('revert') >= 0, "Authorization change should revert for unauthorized account");
+            assert.include(error.message, 'revert', "The modification should revert due to the user being unauthorized");
         }
     });
 });
