@@ -5,84 +5,84 @@ const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
 const CONTRACT_ABI = [];
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
-const walletWithProvider = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, walletWithProvider);
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+const cryptoAssetContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-const cacheStore = {};
+const cacheStorage = {};
 
-const generateCacheKey = (prefix, ...parameters) => `${prefix}-${parameters.join('-')}`;
+const createCacheKey = (prefix, ...params) => `${prefix}-${params.join('-')}`;
 
-async function fetchFromContractWithCache(prefix, contractMethod, ...parameters) {
-    const cacheKey = generateCacheKey(prefix, ...parameters);
-    if (cacheStore[cacheKey]) {
-        console.log(`Returning cached result for ${prefix}: `, cacheStore[cacheKey]);
-        return cacheStore[cacheKey];
+async function fetchDataWithCache(prefix, contractMethodName, ...params) {
+    const cacheKey = createCacheKey(prefix, ...params);
+    if (cacheStorage[cacheKey]) {
+        console.log(`Returning cached result for ${prefix}: `, cacheStorage[cacheKey]);
+        return cacheStorage[cacheKey];
     }
 
     try {
-        const contractResponse = await contractInstance[contractMethod](...parameters);
-        console.log(`${prefix} fetched: `, contractResponse);
-        cacheStore[cacheKey] = contractResponse;
-        return contractResponse;
+        const contractReply = await cryptoAssetContract[contractMethodName](...params);
+        console.log(`${prefix} retrieved: `, contractReply);
+        cacheStorage[cacheKey] = contractReply;
+        return contractReply;
     } catch (error) {
-        console.error(`Error fetching ${prefix}: ${error.message}`);
-        throw new Error(`Error fetching from contract for ${prefix}. See: ${error.message}`);
+        console.error(`Error retrieving ${prefix}: ${error.message}`);
+        throw new Error(`Failed to retrieve data from contract for ${prefix}. See: ${error.message}`);
     }
 }
 
-function validateId(id) {
-    const idValidationCacheKey = generateCacheKey('validateId', id);
-    if (cacheStore[idValidationCacheKey] !== undefined) {
-        if (!cacheStore[idValidationCacheKey]) {
-            throw new Error("Cached: Valid ID is required.");
+function checkValidId(id) {
+    const cacheKeyForIdValidation = createCacheKey('checkValidId', id);
+    if (cacheStorage[cacheKeyForIdValidation] !== undefined) {
+        if (!cacheStorage[cacheKeyForIdValidation]) {
+            throw new Error("Cached: A valid numeric ID is mandatory.");
         }
         return;
     }
 
     if (!id || isNaN(id)) {
-        cacheStore[idValidationCacheKey] = false;
-        throw new Error("A valid numeric ID is required.");
+        cacheStorage[cacheKeyForIdValidation] = false;
+        throw new Error("A valid numeric ID is mandatory.");
     }
-    cacheStore[idValidationCacheKey] = true;
+    cacheStorage[cacheKeyForIdValidation] = true;
 }
 
-function validateOwnerAddress(ownerAddress) {
-    const addressValidationCacheKey = generateCacheKey('validateOwnerAddress', ownerAddress);
-    if (cacheStore[addressValidationCacheKey] !== undefined) {
-        if (!cacheStore[addressValidationCacheKey]) {
-            throw new Error("Cached: Valid owner address is required.");
+function checkValidEthereumAddress(address) {
+    const cacheKeyForAddressValidation = createCacheKey('checkValidEthereumAddress', address);
+    if (cacheStorage[cacheKeyForAddressValidation] !== undefined) {
+        if (!cacheStorage[cacheKeyForAddressValidation]) {
+            throw new Error("Cached: A valid Ethereum address is required.");
         }
         return;
     }
 
-    if (!ethers.utils.isAddress(ownerAddress)) {
-        cacheStore[addressValidationCacheKey] = false;
+    if (!ethers.utils.isAddress(address)) {
+        cacheStorage[cacheKeyForAddressValidation] = false;
         throw new Error("A valid Ethereum address is required.");
     }
-    cacheStore[addressValidationCacheKey] = true;
+    cacheStorage[cacheKeyForAddressValidation] = true;
 }
 
 module.exports = {
-    getAssetDetails: async (assetId) => {
-        validateId(assetId);
+    getDetailsOfAsset: async (assetId) => {
+        checkValidId(assetId);
         try {
-            const assetDetails = await contractInstance.getAsset(assetId);
-            console.log(`Asset Details for ID ${assetId}:`, assetDetails);
-            return assetDetails;
+            const detailsOfAsset = await cryptoAssetContract.getAsset(assetId);
+            console.log(`Details for Asset ID ${assetId}:`, detailsOfAsset);
+            return detailsOfAsset;
         } catch (error) {
-            console.error(`Error fetching asset details: ${error}`);
-            throw new Error(`Failed to fetch asset details: ${error.message}`);
+            console.error(`Error fetching details of asset: ${error}`);
+            throw new Error(`Failed to fetch details for asset: ${error.message}`);
         }
     },
     
-    getAllAssetsSummary: async () => {
+    getSummaryOfAllAssets: async () => {
         try {
-            const allAssets = await contractInstance.getAllAssets();
-            console.log(`Summary of all assets:`, allAssets);
-            return allAssets;
+            const summaryOfAllAssets = await cryptoAssetContract.getAllAssets();
+            console.log(`Summary of All Assets:`, summaryOfAllAssets);
+            return summaryOfAllAssets;
         } catch (error) {
-            console.error(`Error fetching all assets summary: ${error}`);
-            throw new Error(`Failed to fetch all assets summary: ${error.message}`);
+            console.error(`Error fetching summary of all assets: ${error}`);
+            throw new Error(`Failed to fetch summary of all assets: ${error.message}`);
         }
     },
 };
