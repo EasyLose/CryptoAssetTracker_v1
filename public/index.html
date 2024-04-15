@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Asset Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Crypto Asset Tracker</h1>
+    </header>
+    <section id="asset-list">
+        <h2>Assets</h2>
+        <ul id="assets"></ul>
+    </section>
+    <section id="register-asset">
+        <h2>Register New Asset</h2>
+        <form id="register-form">
+            <label for="assetName">Asset Name:</label>
+            <input type="text" id="assetName" name="assetName" required>
+            <label for="assetValue">Asset Value (in Crypto):</label>
+            <input type="number" id="assetValue" name="assetValue" required>
+            <button type="submit">Register Asset</button>
+        </form>
+    </section>
+    <section id="transfer-ownership">
+        <h2>Transfer Ownership</h2>
+        <form id="transfer-form">
+            <label for="assetId">Asset ID:</label>
+            <input type="text" id="assetId" name="assetId" required>
+            <label for="newOwner">New Owner:</label>
+            <input type="text" id="newOwner" name="newOwner" required>
+            <button type="submit">Transfer Ownership</button>
+        </form>
+    </section>
+    <section id="search-history">
+        <h2>Asset History</h2>
+        <form id="search-form">
+            <label for="searchAssetId">Asset ID:</label>
+            <input type="text" id="searchAssetId" name="searchAssetId" required>
+            <button type="submit">Search History</button>
+        </form>
+        <div id="historyResults"></div>
+    </section>
+    <footer>
+        <p>Crypto Asset Tracker © 2023</p>
+    </footer>
+    <script src="app.js"></script>
+</body>
+</html>
