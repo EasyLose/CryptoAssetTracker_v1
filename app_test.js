@@ -2,7 +2,7 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
-const CONTRACT_ABI = [];
+const CONTRACT_ABI = []; // Ensure this contains all necessary contract function definitions
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
 const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -62,11 +62,24 @@ function checkValidEthereumAddress(address) {
     cacheStorage[cacheKeyForAddressValidation] = true;
 }
 
+// New functionality to get ownership history
+const getAssetOwnerHistory = async (assetId) => {
+    checkValidId(assetId); // Reusing existing validation
+    try {
+        const ownershipHistory = await fetchDataWithCache('getAssetOwnerHistory', 'getOwnershipHistory', assetId);
+        console.log(`Ownership History for Asset ID ${assetId}:`, ownershipHistory);
+        return ownershipHistory;
+    } catch (error) {
+        console.error(`Error fetching ownership history: ${error}`);
+        throw new Error(`Failed to fetch ownership history for asset: ${error.message}`);
+    }
+};
+
 module.exports = {
     getDetailsOfAsset: async (assetId) => {
         checkValidId(assetId);
         try {
-            const detailsOfAsset = await cryptoAssetContract.getAsset(assetId);
+            const detailsOfAsset = await fetchDataWithCache('getDetailsOfAsset', 'getAsset', assetId);
             console.log(`Details for Asset ID ${assetId}:`, detailsOfAsset);
             return detailsOfAsset;
         } catch (error) {
@@ -77,7 +90,7 @@ module.exports = {
     
     getSummaryOfAllAssets: async () => {
         try {
-            const summaryOfAllAssets = await cryptoAssetContract.getAllAssets();
+            const summaryOfAllAssets = await fetchDataWithCache('getSummaryOfAllAssets', 'getAllAssets');
             console.log(`Summary of All Assets:`, summaryOfAllAssets);
             return summaryOfAllAssets;
         } catch (error) {
@@ -85,4 +98,6 @@ module.exports = {
             throw new Error(`Failed to fetch summary of all assets: ${error.message}`);
         }
     },
+
+    getAssetOwnerHistory, // Exposing the new function
 };
