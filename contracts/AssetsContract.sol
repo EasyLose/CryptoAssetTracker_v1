@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 contract DigitalAssetTracker {
@@ -11,88 +10,90 @@ contract DigitalAssetTracker {
     }
 
     uint32 private nextAssetId = 1;
-    mapping(uint32 => Asset) public assets;
-    mapping(uint32 => address[]) public assetHistory;
-    mapping(address => uint32[]) public ownerAssets;
-    mapping(address => bool) public authorizedAccounts;
-    mapping(uint32 => address) public pendingTransfers;
+    mapping(uint32 => Asset) public assetsById;
+    mapping(uint32 => address[]) public assetOwnershipHistory;
+    mapping(address => uint32[]) public assetsOwnedByAddress;
+    mapping(address => bool) public isAccountAuthorized;
+    mapping(uint32 => address) public awaitingTransferApproval;
 
-    error AssetDoesNotExist();
-    error NotAssetOwner();
-    error NotAuthorized();
-    error NoPendingTransfer(address to);
+    error AssetNotFound();
+    error UnauthorizedAccess();
+    error AssetOwnershipMismatch();
+    error TransferNotInitiated(address recipient);
 
-    event AssetRegistered(uint32 assetId, address owner, string name, string description);
-    event AssetTransferred(uint32 assetId, address from, address to);
-    event AssetRemoved(uint32 assetId);
-    event AuthorizationChanged(address account, bool isAuthorized);
-    event TransferInitiated(uint32 assetId, address from, address to);
-    event TransferAccepted(uint32 assetId, address to);
+    event AssetCreated(uint32 assetId, address owner, string name, string description);
+    event AssetOwnershipTransferred(uint32 assetId, address from, address to);
+    event AssetDeleted(uint32 assetId);
+    event AuthorizationStatusChanged(address account, bool isAuthorized);
+    event TransferRequestStarted(uint32 assetId, address from, address to);
+    event TransferApprovalGranted(uint32 assetId, address to);
 
-    modifier onlyOwner(uint32 assetId) {
-        if (!assets[assetId].exists) revert AssetDoesNotExist();
-        if (assets[assetId].owner != msg.sender) revert NotAssetOwner();
+    modifier assetExists(uint32 assetId) {
+        if (!assetsById[assetId].exists) revert AssetNotFound();
         _;
     }
     
-    modifier onlyAuthorized() {
-        if (!authorizedAccounts[msg.sender]) revert NotAuthorized();
+    modifier onlyAssetOwner(uint32 assetId) {
+        if (assetsById[assetId].owner != msg.sender) revert AssetOwnershipMismatch();
+        _;
+    }
+    
+    modifier onlyAuthorizedAccount() {
+        if (!isAccountAuthorized[msg.sender]) revert UnauthorizedAccess();
         _;
     }
 
-    modifier onlyPendingTransfer(uint32 _assetId, address _to) {
-        if (pendingTransfers[_assetId] != _to) revert NoPendingTransfer(_to);
+    modifier pendingTransferApproval(uint32 assetId, address to) {
+        if (awaitingTransferApproval[assetId] != to) revert TransferNotInitiated(to);
         _;
     }
 
     constructor() {
-        authorizedAccounts[msg.sender] = true;
-        emit AuthorizationChanged(msg.sender, true);
+        isAccountAuthorized[msg.sender] = true;
+        emit AuthorizationStatusChanged(msg.sender, true);
     }
 
-    function registerAsset(string memory _name, string memory _description) public onlyAuthorized {
+    function createAsset(string memory name, string memory description) public onlyAuthorizedAccount {
         uint32 assetId = nextAssetId++;
-        assets[assetId] = Asset(assetId, msg.sender, _name, _description, true);
-        assetHistory[assetId].push(msg.sender);
-        ownerAssets[msg.sender].push(assetId);
-        emit AssetRegistered(assetId, msg.sender, _name, _description);
+        assetsById[assetId] = Asset(assetId, msg.sender, name, description, true);
+        assetOwnershipHistory[assetId].push(msg.sender);
+        assetsOwnedByAddress[msg.sender].push(assetId);
+        emit AssetCreated(assetId, msg.sender, name, description);
     }
 
-    function transferAsset(uint32 _assetId, address _newOwner) public onlyOwner(_assetId) {
-        pendingTransfers[_assetId] = _newOwner;
-        emit TransferInitiated(_assetId, msg.sender, _newOwner);
+    function initiateAssetTransfer(uint32 assetId, address newOwner) public assetExists(assetId) onlyAssetOwner(assetId) {
+        awaitingTransferApproval[assetId] = newOwner;
+        emit TransferRequestStarted(assetId, msg.sender, newOwner);
     }
 
-    function acceptTransfer(uint32 _assetId) public onlyPendingTransfer(_assetId, msg.sender) {
-        address oldOwner = assets[_assetId].owner;
-        assets[_assetId].owner = msg.sender;
-        assetHistory[_assetId].push(msg.sender);
-        ownerAssets[msg.sender].push(_assetId);
-        delete pendingTransfers[_assetId];
-        emit AssetTransferred(_assetId, oldOwner, msg.sender);
+    function approveAssetTransfer(uint32 assetId) public pendingTransferApproval(assetId, msg.sender) {
+        address originalOwner = assetsById[assetId].owner;
+        assetsById[assetId].owner = msg.sender;
+        assetOwnershipHistory[assetId].push(msg.sender);
+        assetsOwnedByAddress[msg.sender].push(assetId);
+        delete awaitingTransferApproval[assetId];
+        emit AssetOwnershipTransferred(assetId, originalOwner, msg.sender);
     }
 
-    function removeAsset(uint32 _assetId) public onlyOwner(_assetId) {
-        delete assets[_assetId];
-        emit AssetRemoved(_assetId);
+    function deleteAsset(uint32 assetId) public onlyAssetOwner(assetId) assetExists(assetId) {
+        delete assetsById[assetId];
+        emit AssetDeleted(assetId);
     }
 
-    function getAsset(uint32 _assetId) public view returns (Asset memory) {
-        if (!assets[_assetId].exists) revert AssetDoesNotExist();
-        return assets[_assetId];
+    function retrieveAssetDetails(uint32 assetId) public view assetExists(assetId) returns (Asset memory) {
+        return assetsById[assetId];
     }
 
-    function getAssetHistory(uint32 _assetId) public view returns (address[] memory) {
-        if (!assets[_assetId].exists) revert AssetDoesNotExist();
-        return assetHistory[_assetId];
+    function retrieveAssetHistory(uint32 assetId) public view assetExists(assetId) returns (address[] memory) {
+        return assetOwnershipHistory[assetId];
     }
 
-    function getOwnerAssets(address _owner) public view returns (uint32[] memory) {
-        return ownerAssets[_owner];
+    function listAssetsOwned(address owner) public view returns (uint32[] memory) {
+        return assetsOwnedByAddress[owner];
     }
 
-    function setAuthorization(address _account, bool _isAuthorized) public onlyAuthorized {
-        authorizedAccounts[_account] = _isAuthorized;
-        emit AuthorizationChanged(_account, _isAuthorized);
+    function adjustAuthorizationStatus(address account, bool newStatus) public onlyAuthorizedAccount {
+        isAccountAuthorized[account] = newStatus;
+        emit AuthorizationStatusChanged(account, newStatus);
     }
 }
