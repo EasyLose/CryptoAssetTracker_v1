@@ -2,7 +2,7 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
-const CONTRACT_ABI = []; 
+const CONTRACT_ABI = [];
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
 const walletWithProvider = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
@@ -25,8 +25,8 @@ async function fetchFromContractWithCache(prefix, contractMethod, ...parameters)
         cacheStore[cacheKey] = contractResponse;
         return contractResponse;
     } catch (error) {
-        console.error(`Error fetching ${prefix}: ${error}`);
-        throw new Error(`Error during fetch for ${prefix}.`);
+        console.error(`Error fetching ${prefix}: ${error.message}`);
+        throw new Error(`Error fetching from contract for ${prefix}. See: ${error.message}`);
     }
 }
 
@@ -39,9 +39,9 @@ function validateId(id) {
         return;
     }
 
-    if (!id) {
+    if (!id || isNaN(id)) {
         cacheStore[idValidationCacheKey] = false;
-        throw new Error("Valid ID is required.");
+        throw new Error("A valid numeric ID is required.");
     }
     cacheStore[idValidationCacheKey] = true;
 }
@@ -57,7 +57,7 @@ function validateOwnerAddress(ownerAddress) {
 
     if (!ethers.utils.isAddress(ownerAddress)) {
         cacheStore[addressValidationCacheKey] = false;
-        throw new Error("Valid owner address is required.");
+        throw new Error("A valid Ethereum address is required.");
     }
     cacheStore[addressValidationCacheKey] = true;
 }
@@ -72,7 +72,7 @@ module.exports = {
 
         if (!name || !description) {
             console.error("Asset addition failed: Name or description missing.");
-            throw new Error("Name and description for asset are mandatory.");
+            throw new Error("Name and description for the asset are mandatory.");
         }
 
         try {
@@ -98,7 +98,7 @@ module.exports = {
             validateOwnerAddress(recipientAddress);
             const transferTx = await contractInstance.initiateAssetTransfer(assetId, recipientAddress);
             await transferTx.wait();
-            console.log(`Asset ID ${assetId} transfer initiated to ${recipientAddress}`);
+            console.log(`Asset ID ${assetId} transferred to ${recipientAddress}`);
             cacheStore[transferCacheKey] = true;
         } catch (error) {
             console.error(`Error initiating asset transfer: ${error}`);
