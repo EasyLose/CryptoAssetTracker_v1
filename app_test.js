@@ -1,5 +1,4 @@
 const ethers = require('ethers');
-
 require('dotenv').config();
 
 const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
@@ -56,6 +55,7 @@ module.exports = {
             throw new Error(`Asset creation failed due to error: ${error.message}`);
         }
     },
+
     initiateAssetTransfer: async (assetId, newOwner) => {
         try {
             validateId(assetId);
