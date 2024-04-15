@@ -1,0 +1,77 @@
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f7f6;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+.navbar {
+  background-color: #0275d8;
+  padding: 10px 20px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.navbar a {
+  color: #fff;
+  text-decoration: none;
+  padding: 0 15px;
+}
+.navbar a:hover {
+  text-decoration: underline;
+}
+.content {
+  padding: 20px;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.table th, .table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+.table th {
+  background-color: #0275d8;
+  color: #fff;
+}
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+.form-input {
+  margin-bottom: 20px;
+}
+.form-input label {
+  display: block;
+  margin-bottom: 5px;
+}
+.form-input input, .form-input select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.form-input input[type="submit"] {
+  background-color: #0275d8;
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+.form-input input[type="submit"]:hover {
+  background-color: #025aa5;
+}
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+  }
+  .navbar a {
+    padding: 10px 0;
+  }
+  .content {
+    padding: 10px;
+  }
+}
