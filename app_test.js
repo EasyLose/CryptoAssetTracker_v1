@@ -16,6 +16,9 @@ const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
 
+// Creating a simple cache object
+const cache = {};
+
 async function createAsset(name, description) {
     try {
         const tx = await contract.createAsset(name, description);
@@ -47,27 +50,48 @@ async function approveAssetTransfer(assetId) {
 }
 
 async function retrieveAssetDetails(assetId) {
+    const cacheKey = `assetDetails-${assetId}`;
+    if (cache[cacheKey]) {
+        console.log(`Cached asset details: `, cache[cacheKey]);
+        return cache[cacheKey];
+    }
+
     try {
         const asset = await contract.retrieveAssetDetails(assetId);
         console.log(`Asset details: `, asset);
+        cache[cacheKey] = asset; // Cache the result
     } catch (error) {
         console.error(`Failed to retrieve asset details: ${error.message}`);
     }
 }
 
 async function retrieveAssetHistory(assetId) {
+    const cacheKey = `assetHistory-${assetId}`;
+    if (cache[cacheKey]) {
+        console.log(`Cached asset history: `, cache[cacheKey]);
+        return cache[cacheKey];
+    }
+
     try {
         const history = await contract.retrieveAssetHistory(assetId);
         console.log(`Asset history: `, history);
+        cache[cacheKey] = history; // Cache the result
     } catch (error) {
         console.error(`Failed to retrieve asset history: ${error.message}`);
     }
 }
 
 async function listAssetsOwned(owner) {
+    const cacheKey = `assetsOwned-${owner}`;
+    if (cache[cacheKey]) {
+        console.log(`Cached ${owner} owns assets: `, cache[cacheKey]);
+        return cache[cacheKey];
+    }
+
     try {
         const assets = await contract.listAssetsOwned(owner);
         console.log(`${owner} owns assets: `, assets);
+        cache[cacheKey] = assets; // Cache the result
     } catch (error) {
         console.error(`Failed to list assets owned: ${error.message}`);
     }
