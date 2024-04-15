@@ -1,29 +1,29 @@
 const ethers = require('ethers');
 require('dotenv').config();
 
-const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
-const CONTRACT_ABI = [];
+const ASSET_CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
+const ASSET_CONTRACT_ABI = [];
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, wallet);
+const blockchainProvider = new ethers.providers.JsonRpcProvider(process.env.INFURA_URL);
+const signerWallet = new ethers.Wallet(process.env.PRIVATE_KEY, blockchainProvider);
+const assetContract = new ethers.Contract(ASSET_CONTRACT_ADDRESS, ASSET_CONTRACT_ABI, signerWallet);
 
-const cache = {};
+const resultCache = {};
 
-const cacheKeyGenerator = (prefix, ...args) => `${prefix}-${args.join('-')}`;
+const buildCacheKey = (prefix, ...args) => `${prefix}-${args.join('-')}`;
 
-async function fetchWithCache(prefix, contractFunc, ...args) {
-    const cacheKey = cacheKeyGenerator(prefix, ...args);
-    if (cache[cacheKey]) {
-        console.log(`Cached ${prefix}: `, cache[cacheKey]);
-        return cache[cacheKey];
+async function fetchWithCaching(prefix, contractMethod, ...args) {
+    const cacheKey = buildCacheKey(prefix, ...args);
+    if (resultCache[cacheKey]) {
+        console.log(`Cached ${prefix}: `, resultCache[cacheKey]);
+        return resultCache[cacheKey];
     }
 
     try {
-        const result = await contract[contractFunc](...args);
-        console.log(`${prefix}: `, result);
-        cache[cacheKey] = result;
-        return result;
+        const queryResult = await assetContract[contractMethod](...args);
+        console.log(`${prefix}: `, queryResult);
+        resultCache[cacheKey] = queryResult;
+        return queryResult;
     } catch (error) {
         console.error(`Failed to retrieve ${prefix}: ${error}`);
         console.error(error.stack);
@@ -31,41 +31,41 @@ async function fetchWithCache(prefix, contractFunc, ...args) {
     }
 }
 
-function validateId(id) {
-    if (!id) throw new Error("Valid ID is required.");
+function ensureValidId(id) {
+    if (!id) throw new Error("A valid ID is required.");
 }
 
-function validateOwnerAddress(owner) {
-    if (!ethers.utils.isAddress(owner)) throw new Error("Valid owner address is required.");
+function ensureValidOwnerAddress(ownerAddress) {
+    if (!ethers.utils.isAddress(ownerAddress)) throw new Error("A valid owner address is required.");
 }
 
 module.exports = {
-    createAsset: async (name, description) => {
-        if (!name || !description) {
-            console.error("Asset creation failed due to empty name or description.");
-            throw new Error("Asset name or description cannot be empty.");
+    createAsset: async (assetName, assetDescription) => {
+        if (!assetName || !assetDescription) {
+            console.error("Asset creation failed: missing name or description.");
+            throw new Error("Asset name and description are required fields.");
         }
 
         try {
-            const tx = await contract.createAsset(name, description);
-            await tx.wait();
-            console.log(`Asset created: ${name}`);
+            const creationTransaction = await assetContract.createAsset(assetName, assetDescription);
+            await creationTransaction.wait();
+            console.log(`Asset created: ${assetName}`);
         } catch (error) {
             console.error(`Failed to create asset: ${error.message}`);
-            throw new Error(`Asset creation failed due to error: ${error.message}`);
+            throw new Error(`Asset creation failed: ${error.message}`);
         }
     },
 
-    initiateAssetTransfer: async (assetId, newOwner) => {
+    initiateAssetTransfer: async (assetId, newOwnerAddress) => {
         try {
-            validateId(assetId);
-            validateOwnerAddress(newOwner);
-            const tx = await contract.initiateAssetTransfer(assetId, newOwner);
-            await tx.wait();
-            console.log(`Transfer initiated for asset ID ${assetId} to ${newOwner}`);
+            ensureValidId(assetId);
+            ensureValidOwnerAddress(newOwnerAddress);
+            const transferTransaction = await assetContract.initiateAssetTransfer(assetId, newOwnerAddress);
+            await transferTransaction.wait();
+            console.log(`Transfer initiated for asset ID ${assetId} to ${newOwnerAddress}`);
         } catch (error) {
             console.error(`Failed to initiate asset transfer: ${error}`);
-            throw new Error(`Initiating transfer of asset ID ${assetId} failed due to error: ${error.message}`);
+            throw new Error(`Asset transfer initiation failed: ${error.message}`);
         }
     },
 };
