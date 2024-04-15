@@ -9,12 +9,18 @@ contract DigitalAssetTracker {
         string description;
         bool exists;
     }
+
     uint32 private nextAssetId = 1;
     mapping(uint32 => Asset) public assets;
     mapping(uint32 => address[]) public assetHistory;
     mapping(address => uint32[]) public ownerAssets;
     mapping(address => bool) public authorizedAccounts;
     mapping(uint32 => address) public pendingTransfers;
+
+    error AssetDoesNotExist();
+    error NotAssetOwner();
+    error NotAuthorized();
+    error NoPendingTransfer(address to);
 
     event AssetRegistered(uint32 assetId, address owner, string name, string description);
     event AssetTransferred(uint32 assetId, address from, address to);
@@ -24,18 +30,18 @@ contract DigitalAssetTracker {
     event TransferAccepted(uint32 assetId, address to);
 
     modifier onlyOwner(uint32 assetId) {
-        require(assets[assetId].exists, "Asset does not exist.");
-        require(assets[assetId].owner == msg.sender, "Not the asset owner.");
+        if (!assets[assetId].exists) revert AssetDoesNotExist();
+        if (assets[assetId].owner != msg.sender) revert NotAssetOwner();
         _;
     }
     
     modifier onlyAuthorized() {
-        require(authorizedAccounts[msg.sender], "Not authorized.");
+        if (!authorizedAccounts[msg.sender]) revert NotAuthorized();
         _;
     }
 
     modifier onlyPendingTransfer(uint32 _assetId, address _to) {
-        require(pendingTransfers[_assetId] == _to, "No pending transfer to this address for this asset.");
+        if (pendingTransfers[_assetId] != _to) revert NoPendingTransfer(_to);
         _;
     }
 
@@ -64,22 +70,20 @@ contract DigitalAssetTracker {
         ownerAssets[msg.sender].push(_assetId);
         delete pendingTransfers[_assetId];
         emit AssetTransferred(_assetId, oldOwner, msg.sender);
-        // Removing an asset from the previous owner's array is not handled here.
     }
 
     function removeAsset(uint32 _assetId) public onlyOwner(_assetId) {
         delete assets[_assetId];
-        // Direct deletion in an array of `ownerAssets[msg.sender][_assetId]` is not possible; needs complex logic to manage.
         emit AssetRemoved(_assetId);
     }
 
     function getAsset(uint32 _assetId) public view returns (Asset memory) {
-        require(assets[_assetId].exists, "Asset does not exist.");
+        if (!assets[_assetId].exists) revert AssetDoesNotExist();
         return assets[_assetId];
     }
 
     function getAssetHistory(uint32 _assetId) public view returns (address[] memory) {
-        require(assets[_assetId].exists, "Asset does not exist.");
+        if (!assets[_assetId].exists) revert AssetDoesNotExist();
         return assetHistory[_assetId];
     }
 
