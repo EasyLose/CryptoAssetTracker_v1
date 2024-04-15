@@ -26,7 +26,9 @@ async function fetchWithCache(prefix, contractFunc, ...args) {
         cache[cacheKey] = result;
         return result;
     } catch (error) {
-        console.error(`Failed to retrieve ${prefix}: ${error.message}`);
+        console.error(`Failed to retrieve ${prefix}: ${error}`);
+        console.error(error.stack);
+        throw new Error(`Fetch operation for ${prefix} failed.`);
     }
 }
 
@@ -40,13 +42,18 @@ function validateOwnerAddress(owner) {
 
 module.exports = {
     createAsset: async (name, description) => {
+        if (!name || !description) {
+            console.error("Asset creation failed due to empty name or description.");
+            throw new Error("Asset name or description cannot be empty.");
+        }
+
         try {
-            if (!name || !description) throw new Error("Asset name or description cannot be empty.");
             const tx = await contract.createAsset(name, description);
             await tx.wait();
             console.log(`Asset created: ${name}`);
         } catch (error) {
             console.error(`Failed to create asset: ${error.message}`);
+            throw error;
         }
     },
     initiateAssetTransfer: async (assetId, newOwner) => {
@@ -57,7 +64,8 @@ module.exports = {
             await tx.wait();
             console.log(`Transfer initiated for asset ID ${assetId} to ${newOwner}`);
         } catch (error) {
-            console.error(`Failed to initiate asset transfer: ${error.message}`);
+            console.error(`Failed to initiate asset transfer: ${error}`);
+            throw new Error(`Initiating transfer of asset ID ${assetId} failed.`);
         }
     },
 };
